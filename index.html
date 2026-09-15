@@ -74,6 +74,9 @@
       margin-bottom: 8px; border: 1px solid var(--border-color);
       display: flex; justify-content: space-between; align-items: center;
     }
+    .form-group.column-layout {
+      flex-direction: column; align-items: flex-start; gap: 10px;
+    }
     .form-label { display: flex; flex-direction: column; width: 55%; }
     .label-main { font-weight: 600; font-size: 0.95rem; }
     .label-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
@@ -81,7 +84,7 @@
     input, select {
       border: 1px solid var(--border-color); background: var(--bg-color);
       padding: 8px 12px; border-radius: 8px; color: var(--text-main);
-      text-align: right; font-weight: 600; outline: none; max-width: 120px;
+      text-align: right; font-weight: 600; outline: none; max-width: 140px;
     }
     select { max-width: 170px; text-align: left; }
     .input-group { display: flex; align-items: center; gap: 6px; }
@@ -260,17 +263,28 @@
       <div class="form-group">
         <div class="form-label">
           <span class="label-main">Plan</span>
-          <span class="label-sub">Protocol for Glutathione · Glutathione</span>
+          <span class="label-sub" id="planSubtext">Protocol for Glutathione</span>
         </div>
-        <select id="planSelect">
+        <select id="planSelect" onchange="toggleCustomPlanInput()">
           <option value="Glutathione">Glutathione</option>
-          <option value="Custom">Custom Plan</option>
+          <option value="Semaglutide">Semaglutide</option>
+          <option value="Tirzepatide">Tirzepatide</option>
+          <option value="NAD+">NAD+</option>
+          <option value="Custom">Custom Plan...</option>
         </select>
+      </div>
+
+      <div class="form-group column-layout" id="customPlanGroup" style="display: none;">
+        <div class="form-label" style="width: 100%;">
+          <span class="label-main">Custom Plan Name</span>
+          <span class="label-sub">Type your custom peptide or routine name</span>
+        </div>
+        <input type="text" id="customPlanInput" placeholder="e.g. Morning Glow Routine" style="text-align: left; max-width: 100%; width: 100%;">
       </div>
       
       <div class="info-box">
         <span>ⓘ</span>
-        <span>Showing Glutathione plans — the peptide can't change once injections are logged</span>
+        <span id="infoBoxText">Showing Glutathione plans — the peptide can't change once injections are logged</span>
       </div>
     </div>
   </div>
@@ -280,7 +294,6 @@
     let photoBase64 = '';
     let audioCtx;
 
-    // Initialize Audio Context on user tap
     document.addEventListener('click', () => {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -340,6 +353,23 @@
       { name: 'grey', css: '#adb5bd' },
       { name: 'rainbow', css: 'rainbow' }
     ];
+
+    function toggleCustomPlanInput() {
+      const select = document.getElementById('planSelect');
+      const customGroup = document.getElementById('customPlanGroup');
+      const subtext = document.getElementById('planSubtext');
+      const infoText = document.getElementById('infoBoxText');
+
+      if (select.value === 'Custom') {
+        customGroup.style.display = 'flex';
+        subtext.textContent = 'Custom protocol active';
+        infoText.textContent = 'Custom plan selected — type your preferred name above.';
+      } else {
+        customGroup.style.display = 'none';
+        subtext.textContent = `Protocol for ${select.value}`;
+        infoText.textContent = `Showing ${select.value} plans — the peptide can't change once injections are logged`;
+      }
+    }
 
     function updateDateTimeDisplay() {
       const dateVal = document.getElementById('reconDate').value;
@@ -401,6 +431,10 @@
     }
 
     function saveVial() {
+      const selectVal = document.getElementById('planSelect').value;
+      const customVal = document.getElementById('customPlanInput').value.trim();
+      const finalPlanName = (selectVal === 'Custom' && customVal) ? customVal : selectVal;
+
       const data = {
         strength: document.getElementById('vialStrength').value,
         unit: document.getElementById('strengthUnit').value,
@@ -412,7 +446,8 @@
         cost: document.getElementById('vialCost').value,
         color: selectedColor,
         photo: photoBase64,
-        plan: document.getElementById('planSelect').value
+        plan: finalPlanName,
+        isCustom: selectVal === 'Custom'
       };
 
       localStorage.setItem('peptide_vial_data', JSON.stringify(data));
@@ -432,7 +467,14 @@
         document.getElementById('reconTime').value = data.reconTime || '00:14';
         document.getElementById('dateApprox').checked = data.dateApprox || false;
         document.getElementById('vialCost').value = data.cost || '0';
-        document.getElementById('planSelect').value = data.plan || 'Glutathione';
+        
+        if (data.isCustom || !['Glutathione', 'Semaglutide', 'Tirzepatide', 'NAD+'].includes(data.plan)) {
+          document.getElementById('planSelect').value = 'Custom';
+          document.getElementById('customPlanInput').value = data.plan || '';
+        } else {
+          document.getElementById('planSelect').value = data.plan || 'Glutathione';
+        }
+
         selectedColor = data.color || 'none';
         if (data.photo) {
           photoBase64 = data.photo;
@@ -444,6 +486,7 @@
         document.getElementById('reconDate').value = '2026-09-09';
         document.getElementById('reconTime').value = '00:14';
       }
+      toggleCustomPlanInput();
       updateDateTimeDisplay();
     }
 
