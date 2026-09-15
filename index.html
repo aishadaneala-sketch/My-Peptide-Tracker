@@ -86,7 +86,6 @@
     select { max-width: 170px; text-align: left; }
     .input-group { display: flex; align-items: center; gap: 6px; }
 
-    /* Pill Button Date Pickers */
     .picker-pill {
       position: relative;
       background: var(--pill-bg);
@@ -154,6 +153,9 @@
       <h1>My Peptides</h1>
       <button class="btn-pink" onclick="openEditModal()">+ Add / Edit Vial</button>
     </header>
+    
+    <button class="btn-pink" style="width:100%; margin-bottom:15px;" onclick="testAlert()">🔔 Test Notification Sound</button>
+
     <div id="vialList"></div>
   </div>
 
@@ -276,6 +278,53 @@
   <script>
     let selectedColor = 'none';
     let photoBase64 = '';
+    let audioCtx;
+
+    // Initialize Audio Context on user tap
+    document.addEventListener('click', () => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }, { once: true });
+
+    function playNotificationSound() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+      
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function testAlert() {
+      playNotificationSound();
+      if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+
+      if (Notification.permission === 'granted') {
+        new Notification('Peptide Tracker', { body: 'Test Alert: Peptide Tracker notifications are working!' });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('Peptide Tracker', { body: 'Test Alert: Peptide Tracker notifications are working!' });
+          }
+        });
+      }
+    }
 
     const colors = [
       { name: 'none', css: 'none' },
