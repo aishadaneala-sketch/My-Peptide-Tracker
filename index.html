@@ -18,6 +18,7 @@
       --accent-hover: #f497ac;
       --accent-light: #fde8ed;
       --border-color: #f3dbe0;
+      --pill-bg: #f9ecef;
       --shadow: 0 4px 15px rgba(232, 180, 193, 0.2);
     }
 
@@ -73,7 +74,7 @@
       margin-bottom: 8px; border: 1px solid var(--border-color);
       display: flex; justify-content: space-between; align-items: center;
     }
-    .form-label { display: flex; flex-direction: column; width: 60%; }
+    .form-label { display: flex; flex-direction: column; width: 55%; }
     .label-main { font-weight: 600; font-size: 0.95rem; }
     .label-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
 
@@ -82,8 +83,31 @@
       padding: 8px 12px; border-radius: 8px; color: var(--text-main);
       text-align: right; font-weight: 600; outline: none; max-width: 120px;
     }
-    select { max-width: 160px; text-align: left; }
-    .input-group { display: flex; align-items: center; gap: 4px; }
+    select { max-width: 170px; text-align: left; }
+    .input-group { display: flex; align-items: center; gap: 6px; }
+
+    /* Pill Button Date Pickers */
+    .picker-pill {
+      position: relative;
+      background: var(--pill-bg);
+      border: 1px solid var(--border-color);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .picker-pill input[type="date"],
+    .picker-pill input[type="time"] {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
 
     .toggle-switch { position: relative; width: 44px; height: 24px; }
     .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -146,7 +170,10 @@
       <div class="section-title">PHYSICAL</div>
       
       <div class="form-group">
-        <div class="label-main">Vial strength</div>
+        <div class="form-label">
+          <span class="label-main">Vial strength</span>
+          <span class="label-sub">As printed on the label</span>
+        </div>
         <div class="input-group">
           <input type="number" id="vialStrength" value="600" placeholder="0">
           <select id="strengthUnit" style="width: 65px;">
@@ -170,27 +197,35 @@
       <div class="form-group">
         <div class="form-label">
           <span class="label-main">Syringe</span>
+          <span class="label-sub">100 units · standard</span>
         </div>
         <select id="syringeSelect">
-          <option value="1.0">1 mL · 100 units standard</option>
-          <option value="0.5">0.5 mL · 50 units</option>
-          <option value="0.3">0.3 mL · 30 units</option>
+          <option value="1.0">1 mL</option>
+          <option value="0.5">0.5 mL</option>
+          <option value="0.3">0.3 mL</option>
         </select>
       </div>
 
+      <!-- RECONSTITUTED DATE & TIME -->
       <div class="form-group">
         <div class="form-label">
           <span class="label-main">Reconstituted</span>
           <span class="label-sub">When was this mixed?</span>
         </div>
         <div class="input-group">
-          <input type="date" id="reconDate">
-          <input type="time" id="reconTime">
+          <div class="picker-pill">
+            <span id="dateDisplay">9 Sep 2026</span>
+            <input type="date" id="reconDate" onchange="updateDateTimeDisplay()">
+          </div>
+          <div class="picker-pill">
+            <span id="timeDisplay">12:14 AM</span>
+            <input type="time" id="reconTime" onchange="updateDateTimeDisplay()">
+          </div>
         </div>
       </div>
 
       <div class="form-group">
-        <span class="label-main">Date is approximate</span>
+        <span class="label-main" style="font-size: 0.85rem; color: var(--text-muted);">Date is approximate</span>
         <label class="toggle-switch">
           <input type="checkbox" id="dateApprox">
           <span class="slider"></span>
@@ -223,16 +258,17 @@
       <div class="form-group">
         <div class="form-label">
           <span class="label-main">Plan</span>
+          <span class="label-sub">Protocol for Glutathione · Glutathione</span>
         </div>
         <select id="planSelect">
-          <option value="Glutathione">Protocol for Glutathione</option>
+          <option value="Glutathione">Glutathione</option>
           <option value="Custom">Custom Plan</option>
         </select>
       </div>
       
       <div class="info-box">
         <span>ⓘ</span>
-        <span>Showing plans — the peptide can't change once injections are logged</span>
+        <span>Showing Glutathione plans — the peptide can't change once injections are logged</span>
       </div>
     </div>
   </div>
@@ -255,6 +291,25 @@
       { name: 'grey', css: '#adb5bd' },
       { name: 'rainbow', css: 'rainbow' }
     ];
+
+    function updateDateTimeDisplay() {
+      const dateVal = document.getElementById('reconDate').value;
+      const timeVal = document.getElementById('reconTime').value;
+
+      if (dateVal) {
+        const d = new Date(dateVal + 'T00:00:00');
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        document.getElementById('dateDisplay').textContent = d.toLocaleDateString('en-GB', options);
+      }
+
+      if (timeVal) {
+        const [hours, minutes] = timeVal.split(':');
+        const h = parseInt(hours, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        document.getElementById('timeDisplay').textContent = `${h12}:${minutes} ${ampm}`;
+      }
+    }
 
     function initColorGrid() {
       const grid = document.getElementById('colorGrid');
@@ -324,10 +379,10 @@
         document.getElementById('strengthUnit').value = data.unit || 'mg';
         document.getElementById('bacWater').value = data.bacWater || 6.0;
         document.getElementById('syringeSelect').value = data.syringe || '1.0';
-        document.getElementById('reconDate').value = data.reconDate || '';
-        document.getElementById('reconTime').value = data.reconTime || '';
+        document.getElementById('reconDate').value = data.reconDate || '2026-09-09';
+        document.getElementById('reconTime').value = data.reconTime || '00:14';
         document.getElementById('dateApprox').checked = data.dateApprox || false;
-        document.getElementById('vialCost').value = data.cost || '';
+        document.getElementById('vialCost').value = data.cost || '0';
         document.getElementById('planSelect').value = data.plan || 'Glutathione';
         selectedColor = data.color || 'none';
         if (data.photo) {
@@ -336,7 +391,11 @@
           preview.src = photoBase64;
           preview.style.display = 'block';
         }
+      } else {
+        document.getElementById('reconDate').value = '2026-09-09';
+        document.getElementById('reconTime').value = '00:14';
       }
+      updateDateTimeDisplay();
     }
 
     function renderCard() {
@@ -361,8 +420,6 @@
       `;
     }
 
-    // Set default date to today
-    document.getElementById('reconDate').value = new Date().toISOString().split('T')[0];
     renderCard();
   </script>
 </body>
