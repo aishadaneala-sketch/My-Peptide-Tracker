@@ -1,47 +1,426 @@
-// 1. Initialize Audio Context on first tap (required by iOS Safari)
-let audioCtx;
-document.addEventListener('click', () => {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-}, { once: true });
-
-// 2. Play a gentle chime sound using Web Audio API
-function playNotificationSound() {
-  if (!audioCtx) return;
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
-  osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
-  
-  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-  
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.3);
-}
-
-// 3. Trigger Notification with Sound & Vibration
-function sendNotification(title, body) {
-  if (Notification.permission === 'granted') {
-    // Play sound and trigger haptic vibration
-    playNotificationSound();
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200]);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Peptide Tracker PWA</title>
+  <meta name="theme-color" content="#fff5f7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBlcHRpZGUgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiUGVwdGlkZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmNWY3IiwKICAidGhlbWVfY29sb3IiOiAiI2ZmZjVmNyIKfQ==">
+  <style>
+    :root {
+      --bg-color: #fff5f7;
+      --card-bg: #ffffff;
+      --text-main: #4a3e3e;
+      --text-muted: #8c7b7b;
+      --accent-pink: #f8b4c4;
+      --accent-hover: #f497ac;
+      --accent-light: #fde8ed;
+      --border-color: #f3dbe0;
+      --pill-bg: #f9ecef;
+      --shadow: 0 4px 15px rgba(232, 180, 193, 0.2);
     }
 
-    // Fire local notification
-    new Notification(title, {
-      body: body,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧪</text></svg>'
-    });
-  }
-}
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; min-height: 100vh; }
+
+    .main-container { max-width: 500px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    h1 { font-size: 1.5rem; color: #5a4248; }
+
+    .btn-pink {
+      background: var(--accent-pink);
+      color: white; border: none;
+      padding: 10px 16px; border-radius: 20px;
+      font-weight: bold; cursor: pointer;
+      box-shadow: var(--shadow); transition: background 0.2s;
+    }
+    .btn-pink:hover { background: var(--accent-hover); }
+
+    .vial-card {
+      background: var(--card-bg); border-radius: 16px; padding: 16px;
+      box-shadow: var(--shadow); margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      border: 1px solid var(--border-color);
+    }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(74, 62, 62, 0.4); display: none;
+      justify-content: center; align-items: flex-end; z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .drawer {
+      background: var(--bg-color); width: 100%; max-width: 500px;
+      max-height: 90vh; border-top-left-radius: 24px; border-top-right-radius: 24px;
+      overflow-y: auto; padding: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .icon-btn {
+      background: #f0dfe3; border: none; width: 36px; height: 36px;
+      border-radius: 50%; font-size: 1.1rem; color: var(--text-main);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .save-btn { background: var(--accent-pink); color: white; }
+
+    .section-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; margin: 16px 0 8px 4px; }
+    .form-group {
+      background: var(--card-bg); border-radius: 14px; padding: 12px 16px;
+      margin-bottom: 8px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .form-label { display: flex; flex-direction: column; width: 55%; }
+    .label-main { font-weight: 600; font-size: 0.95rem; }
+    .label-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    input, select {
+      border: 1px solid var(--border-color); background: var(--bg-color);
+      padding: 8px 12px; border-radius: 8px; color: var(--text-main);
+      text-align: right; font-weight: 600; outline: none; max-width: 120px;
+    }
+    select { max-width: 170px; text-align: left; }
+    .input-group { display: flex; align-items: center; gap: 6px; }
+
+    /* Pill Button Date Pickers */
+    .picker-pill {
+      position: relative;
+      background: var(--pill-bg);
+      border: 1px solid var(--border-color);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .picker-pill input[type="date"],
+    .picker-pill input[type="time"] {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .toggle-switch { position: relative; width: 44px; height: 24px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #e0d0d4; border-radius: 24px; transition: .3s;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px;
+      left: 3px; bottom: 3px; background-color: white;
+      border-radius: 50%; transition: .3s;
+    }
+    input:checked + .slider { background-color: var(--accent-pink); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .color-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+      background: var(--card-bg); border-radius: 14px; padding: 16px;
+      border: 1px solid var(--border-color); margin-bottom: 8px;
+    }
+    .swatch {
+      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: transform 0.1s; display: flex;
+      align-items: center; justify-content: center; margin: 0 auto;
+    }
+    .swatch.selected { border-color: var(--text-main); transform: scale(1.1); }
+    .swatch.rainbow { background: linear-gradient(135deg, red, orange, yellow, green, blue, purple); }
+    .swatch.none { background: #eee; position: relative; }
+    .swatch.none::after { content: "/"; font-weight: bold; color: #888; }
+
+    .photo-upload { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .photo-preview { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #eee; display: none; }
+
+    .info-box {
+      background: var(--accent-light); border-radius: 12px; padding: 12px;
+      font-size: 0.8rem; color: #7a5a62; display: flex; gap: 8px; margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="main-container">
+    <header>
+      <h1>My Peptides</h1>
+      <button class="btn-pink" onclick="openEditModal()">+ Add / Edit Vial</button>
+    </header>
+    <div id="vialList"></div>
+  </div>
+
+  <!-- EDIT VIAL MODAL DRAWER -->
+  <div class="modal-overlay" id="editModal">
+    <div class="drawer">
+      <div class="drawer-header">
+        <button class="icon-btn" onclick="closeEditModal()">✕</button>
+        <h2>Edit vial</h2>
+        <button class="icon-btn save-btn" onclick="saveVial()">✓</button>
+      </div>
+
+      <!-- SECTION 1: PHYSICAL -->
+      <div class="section-title">PHYSICAL</div>
+      
+      <div class="form-group">
+        <div class="form-label">
+          <span class="label-main">Vial strength</span>
+          <span class="label-sub">As printed on the label</span>
+        </div>
+        <div class="input-group">
+          <input type="number" id="vialStrength" value="600" placeholder="0">
+          <select id="strengthUnit" style="width: 65px;">
+            <option value="mg">mg</option>
+            <option value="mcg">mcg</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">
+          <span class="label-main">BAC water</span>
+          <span class="label-sub">Volume added at reconstitution</span>
+        </div>
+        <div class="input-group">
+          <input type="number" step="0.1" id="bacWater" value="6.0">
+          <span>mL</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">
+          <span class="label-main">Syringe</span>
+          <span class="label-sub">100 units · standard</span>
+        </div>
+        <select id="syringeSelect">
+          <option value="1.0">1 mL</option>
+          <option value="0.5">0.5 mL</option>
+          <option value="0.3">0.3 mL</option>
+        </select>
+      </div>
+
+      <!-- RECONSTITUTED DATE & TIME -->
+      <div class="form-group">
+        <div class="form-label">
+          <span class="label-main">Reconstituted</span>
+          <span class="label-sub">When was this mixed?</span>
+        </div>
+        <div class="input-group">
+          <div class="picker-pill">
+            <span id="dateDisplay">9 Sep 2026</span>
+            <input type="date" id="reconDate" onchange="updateDateTimeDisplay()">
+          </div>
+          <div class="picker-pill">
+            <span id="timeDisplay">12:14 AM</span>
+            <input type="time" id="reconTime" onchange="updateDateTimeDisplay()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <span class="label-main" style="font-size: 0.85rem; color: var(--text-muted);">Date is approximate</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="dateApprox">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">
+          <span class="label-main">Cost</span>
+          <span class="label-sub">What you paid (optional)</span>
+        </div>
+        <div class="input-group">
+          <span>$</span>
+          <input type="number" id="vialCost" placeholder="0">
+        </div>
+      </div>
+
+      <!-- SECTION 2: CAP COLOR -->
+      <div class="section-title">CAP COLOR</div>
+      <div class="color-grid" id="colorGrid"></div>
+      
+      <div class="form-group photo-upload">
+        <button class="btn-pink" style="font-size:0.8rem;" onclick="document.getElementById('photoInput').click()">📷 Add Photo</button>
+        <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+        <img id="photoPreview" class="photo-preview" src="" alt="Vial preview">
+      </div>
+
+      <!-- SECTION 3: PLAN -->
+      <div class="section-title">PLAN</div>
+      <div class="form-group">
+        <div class="form-label">
+          <span class="label-main">Plan</span>
+          <span class="label-sub">Protocol for Glutathione · Glutathione</span>
+        </div>
+        <select id="planSelect">
+          <option value="Glutathione">Glutathione</option>
+          <option value="Custom">Custom Plan</option>
+        </select>
+      </div>
+      
+      <div class="info-box">
+        <span>ⓘ</span>
+        <span>Showing Glutathione plans — the peptide can't change once injections are logged</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedColor = 'none';
+    let photoBase64 = '';
+
+    const colors = [
+      { name: 'none', css: 'none' },
+      { name: 'red', css: '#ff6b6b' },
+      { name: 'orange', css: '#ffa94d' },
+      { name: 'yellow', css: '#ffd43b' },
+      { name: 'green', css: '#51cf66' },
+      { name: 'teal', css: '#20c997' },
+      { name: 'blue', css: '#339af0' },
+      { name: 'purple', css: '#cc5de8' },
+      { name: 'pink', css: '#f783ac' },
+      { name: 'white', css: '#ffffff' },
+      { name: 'grey', css: '#adb5bd' },
+      { name: 'rainbow', css: 'rainbow' }
+    ];
+
+    function updateDateTimeDisplay() {
+      const dateVal = document.getElementById('reconDate').value;
+      const timeVal = document.getElementById('reconTime').value;
+
+      if (dateVal) {
+        const d = new Date(dateVal + 'T00:00:00');
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        document.getElementById('dateDisplay').textContent = d.toLocaleDateString('en-GB', options);
+      }
+
+      if (timeVal) {
+        const [hours, minutes] = timeVal.split(':');
+        const h = parseInt(hours, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        document.getElementById('timeDisplay').textContent = `${h12}:${minutes} ${ampm}`;
+      }
+    }
+
+    function initColorGrid() {
+      const grid = document.getElementById('colorGrid');
+      grid.innerHTML = '';
+      colors.forEach(c => {
+        const div = document.createElement('div');
+        div.className = `swatch ${c.css} ${selectedColor === c.name ? 'selected' : ''}`;
+        if (c.css !== 'rainbow' && c.css !== 'none') div.style.backgroundColor = c.css;
+        div.onclick = () => {
+          document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+          div.classList.add('selected');
+          selectedColor = c.name;
+        };
+        grid.appendChild(div);
+      });
+    }
+
+    function openEditModal() {
+      document.getElementById('editModal').classList.add('active');
+      initColorGrid();
+      loadData();
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+
+    function handlePhotoUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          photoBase64 = event.target.result;
+          const preview = document.getElementById('photoPreview');
+          preview.src = photoBase64;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function saveVial() {
+      const data = {
+        strength: document.getElementById('vialStrength').value,
+        unit: document.getElementById('strengthUnit').value,
+        bacWater: document.getElementById('bacWater').value,
+        syringe: document.getElementById('syringeSelect').value,
+        reconDate: document.getElementById('reconDate').value,
+        reconTime: document.getElementById('reconTime').value,
+        dateApprox: document.getElementById('dateApprox').checked,
+        cost: document.getElementById('vialCost').value,
+        color: selectedColor,
+        photo: photoBase64,
+        plan: document.getElementById('planSelect').value
+      };
+
+      localStorage.setItem('peptide_vial_data', JSON.stringify(data));
+      closeEditModal();
+      renderCard();
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem('peptide_vial_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+        document.getElementById('vialStrength').value = data.strength || 600;
+        document.getElementById('strengthUnit').value = data.unit || 'mg';
+        document.getElementById('bacWater').value = data.bacWater || 6.0;
+        document.getElementById('syringeSelect').value = data.syringe || '1.0';
+        document.getElementById('reconDate').value = data.reconDate || '2026-09-09';
+        document.getElementById('reconTime').value = data.reconTime || '00:14';
+        document.getElementById('dateApprox').checked = data.dateApprox || false;
+        document.getElementById('vialCost').value = data.cost || '0';
+        document.getElementById('planSelect').value = data.plan || 'Glutathione';
+        selectedColor = data.color || 'none';
+        if (data.photo) {
+          photoBase64 = data.photo;
+          const preview = document.getElementById('photoPreview');
+          preview.src = photoBase64;
+          preview.style.display = 'block';
+        }
+      } else {
+        document.getElementById('reconDate').value = '2026-09-09';
+        document.getElementById('reconTime').value = '00:14';
+      }
+      updateDateTimeDisplay();
+    }
+
+    function renderCard() {
+      const saved = localStorage.getItem('peptide_vial_data');
+      const container = document.getElementById('vialList');
+      if (!saved) {
+        container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">No vials added yet.</p>';
+        return;
+      }
+      const data = JSON.parse(saved);
+      const conc = (data.strength / data.bacWater).toFixed(2);
+      
+      container.innerHTML = `
+        <div class="vial-card">
+          <div>
+            <h3>${data.plan}</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">${data.strength}${data.unit} / ${data.bacWater}mL BAC</p>
+            <p style="font-size: 0.8rem; font-weight: bold; color: var(--accent-hover); margin-top: 4px;">Conc: ${conc} ${data.unit}/mL</p>
+          </div>
+          <button class="btn-pink" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openEditModal()">Edit</button>
+        </div>
+      `;
+    }
+
+    renderCard();
+  </script>
+</body>
+</html>
