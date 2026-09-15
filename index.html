@@ -4,185 +4,367 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Peptide Tracker PWA</title>
-  <meta name="theme-color" content="#121212">
+  <meta name="theme-color" content="#fff5f7">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBlcHRpZGUgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiUGVwdGlkZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTIxMjEyIiwKICAidGhlbWVfY29sb3IiOiAiIzEyMTIxMiIKfQ==">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBlcHRpZGUgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiUGVwdGlkZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmNWY3IiwKICAidGhlbWVfY29sb3IiOiAiI2ZmZjVmNyIKfQ==">
   <style>
     :root {
-      --bg-dark: #121212;
-      --card-dark: #1e1e1e;
-      --text-white: #ffffff;
-      --text-muted: #9e9e9e;
+      --bg-color: #fff5f7;
+      --card-bg: #ffffff;
+      --text-main: #4a3e3e;
+      --text-muted: #8c7b7b;
+      --accent-pink: #e07a93;
+      --accent-hover: #d0627d;
+      --border-color: #f3dbe0;
+      --shadow: 0 4px 15px rgba(232, 180, 193, 0.2);
+
+      --dark-bg: #121212;
+      --dark-card: #1e1e1e;
+      --dark-border: #2a2a2a;
       --accent-amber: #e59a4c;
-      --accent-amber-hover: #f0a85c;
-      --circle-btn: #262626;
-      --border-dark: #2a2a2a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-white); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 90px; min-height: 100vh; }
 
-    .app-container { max-width: 420px; margin: 0 auto; width: 100%; }
+    .app-container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    /* HEADER */
-    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .icon-circle { width: 42px; height: 42px; background: var(--circle-btn); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border: none; color: white; cursor: pointer; }
-    .page-title { font-size: 1.25rem; font-weight: 700; }
+    .header-center { text-align: center; margin-bottom: 16px; }
+    .header-icon { font-size: 2.2rem; margin-bottom: 4px; display: inline-block; }
+    .header-title { font-size: 1.4rem; color: #3a2e2e; font-weight: 800; }
+    .header-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
 
-    /* VIAL GRAPHIC DISPLAY */
-    .vial-stage { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 35px 0; padding: 0 10px; }
-    .stat-col { text-align: center; }
-    .stat-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 1.2px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
-    .stat-value { font-size: 1.5rem; font-weight: 800; }
-    .stat-unit { font-size: 0.85rem; font-weight: 600; }
+    .card { background: var(--card-bg); border-radius: 20px; padding: 18px; box-shadow: var(--shadow); margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .field-label { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .input-box { width: 100%; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 14px; font-size: 0.95rem; font-weight: 700; color: var(--text-main); outline: none; margin-bottom: 14px; }
 
-    /* CSS VIAL GRAPHIC */
-    .vial-wrapper { position: relative; width: 130px; display: flex; flex-direction: column; align-items: center; }
-    .vial-cap { width: 90px; height: 18px; background: #c5c8cf; border-radius: 6px 6px 2px 2px; }
-    .vial-neck { width: 70px; height: 12px; background: #8e939d; }
-    .vial-body {
-      width: 120px; height: 170px; background: rgba(255, 255, 255, 0.08);
-      border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px 12px 24px 24px;
-      position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
-    }
-    .vial-label { background: #ffffff; color: #121212; font-weight: 900; font-size: 1.1rem; padding: 12px 20px; border-radius: 4px; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-    .vial-liquid { position: absolute; bottom: 0; left: 0; right: 0; height: 35%; background: var(--accent-amber); opacity: 0.85; border-top: 2px solid var(--accent-amber-hover); }
+    .calc-banner { background: #fdf2f4; border-radius: 14px; padding: 12px; margin-bottom: 16px; border: 1px solid #f8d7da; }
+    .calc-text { font-size: 0.88rem; color: var(--accent-pink); font-weight: 700; margin-bottom: 4px; }
 
-    /* TITLE & NOTES */
-    .details-section { text-align: center; margin-bottom: 30px; }
-    .peptide-title { font-size: 2.2rem; font-weight: 900; margin-bottom: 12px; }
-    .note-text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; font-weight: 500; }
+    .pill-group { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
+    .pill { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 18px; font-size: 0.8rem; font-weight: 700; color: var(--text-main); cursor: pointer; white-space: nowrap; }
+    .pill.selected { background: var(--accent-pink); color: white; border-color: var(--accent-pink); }
 
-    /* METRICS CARD */
-    .metrics-card { background: var(--card-dark); border-radius: 20px; padding: 22px 16px; display: flex; justify-content: space-around; text-align: center; border: 1px solid var(--border-dark); margin-bottom: 24px; }
-    .metric-box { flex: 1; position: relative; }
-    .metric-box:not(:last-child)::after { content: ""; position: absolute; right: 0; top: 15%; height: 70%; width: 1px; background: var(--border-dark); }
-    .metric-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
-    .metric-val { font-size: 2.2rem; font-weight: 800; line-height: 1; }
-    .metric-sub { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-left: 2px; }
+    .days-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .day-pill { width: 42px; height: 36px; border-radius: 16px; background: var(--bg-color); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+    .day-pill.selected { background: var(--accent-pink); color: white; border-color: var(--accent-pink); }
 
-    /* BOTTOM BUTTON */
-    .btn-amber { background: var(--accent-amber); color: #121212; border: none; width: 100%; padding: 18px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: background 0.2s; }
-    .btn-amber:active { background: var(--accent-amber-hover); }
+    .btn-pink { background: var(--accent-pink); color: white; border: none; padding: 14px; border-radius: 20px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: var(--shadow); font-size: 0.95rem; }
 
-    /* LOG MODAL */
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: flex-end; z-index: 1000; }
+    /* DARK VIAL VIEW OVERLAY */
+    #vialViewOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--dark-bg); color: white; z-index: 2000; overflow-y: auto; padding: 20px; display: none; }
+    #vialViewOverlay.active { display: block; }
+    
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .icon-circle { width: 40px; height: 40px; background: #262626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: none; color: white; cursor: pointer; }
+
+    .vial-stage { display: flex; justify-content: space-between; align-items: center; margin: 15px 0 25px 0; }
+    .vial-wrapper { position: relative; width: 110px; display: flex; flex-direction: column; align-items: center; }
+    .vial-cap { width: 75px; height: 16px; background: #c5c8cf; border-radius: 6px 6px 2px 2px; }
+    .vial-neck { width: 55px; height: 10px; background: #8e939d; }
+    .vial-body { width: 100px; height: 140px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px 12px 20px 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .vial-label { background: #ffffff; color: #121212; font-weight: 900; font-size: 1rem; padding: 10px 14px; border-radius: 4px; z-index: 2; }
+    .vial-liquid { position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: var(--accent-amber); opacity: 0.85; transition: height 0.3s; }
+
+    .metrics-card { background: var(--dark-card); border-radius: 18px; padding: 18px 12px; display: flex; justify-content: space-around; text-align: center; border: 1px solid var(--dark-border); margin-bottom: 20px; }
+    .metric-box { flex: 1; }
+    .metric-val { font-size: 1.8rem; font-weight: 800; }
+    .metric-sub { font-size: 0.8rem; color: #9e9e9e; }
+
+    .btn-amber { background: var(--accent-amber); color: #121212; border: none; width: 100%; padding: 16px; border-radius: 25px; font-size: 1rem; font-weight: 800; cursor: pointer; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: flex-end; z-index: 3000; }
     .modal-overlay.active { display: flex; }
-    .drawer { background: var(--card-dark); width: 100%; max-width: 420px; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; border: 1px solid var(--border-dark); }
-    .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .input-dark { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 12px; padding: 14px; font-size: 1rem; color: white; margin-bottom: 16px; outline: none; }
+    .drawer { background: var(--card-bg); width: 100%; max-width: 480px; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0 16px 0; z-index: 999; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; border: none; background: none; }
+    .nav-item.active { color: var(--accent-pink); font-weight: 700; }
+    .nav-icon { font-size: 1.2rem; }
   </style>
 </head>
 <body>
 
   <div class="app-container">
-    <!-- TOP NAVIGATION -->
+
+    <!-- SCHEDULE & CALCULATOR TAB -->
+    <div id="tab-schedule" class="tab-content active">
+      <div class="header-center">
+        <span class="header-icon">⚙️</span>
+        <h2 class="header-title">Vial & Dose Setup</h2>
+        <p class="header-sub">Configure peptide reconstitution & schedule</p>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label class="field-label">Peptide Amount (mg)</label>
+            <input type="number" class="input-box" id="pepMg" value="15" oninput="updateCalculations()">
+          </div>
+          <div style="flex: 1;">
+            <label class="field-label">BAC Water (mL)</label>
+            <input type="number" class="input-box" id="bacMl" value="1.5" step="0.1" oninput="updateCalculations()">
+          </div>
+        </div>
+
+        <label class="field-label">Default Dose (mg)</label>
+        <input type="number" class="input-box" id="defDoseMg" value="2.5" step="0.1" oninput="updateCalculations()">
+
+        <div class="calc-banner">
+          <div class="calc-text">Concentration: <span id="calcConc">10.000</span> mg/mL</div>
+          <div class="calc-text">Dose: <span id="calcDoseMg">2.5</span> mg = <span id="calcMl">0.250</span> mL = <span id="calcIU">25.0</span> IU</div>
+          <div style="font-size:0.78rem; color: var(--text-muted);" id="calcInjections">Approx 6 injections per vial</div>
+        </div>
+
+        <label class="field-label">Schedule</label>
+        <div class="pill-group">
+          <div class="pill selected" onclick="selectPill(this)">Daily</div>
+          <div class="pill" onclick="selectPill(this)">Every 2 days</div>
+          <div class="pill" onclick="selectPill(this)">3x/week</div>
+          <div class="pill" onclick="selectPill(this)">Weekly</div>
+          <div class="pill" onclick="selectPill(this)">Custom</div>
+        </div>
+
+        <label class="field-label">Reconstitution / Cycle Start</label>
+        <input type="date" class="input-box" id="reconDate" value="2026-09-07">
+
+        <label class="field-label">Cycle End (Optional)</label>
+        <input type="date" class="input-box" id="cycleEnd">
+
+        <label class="field-label">Notes</label>
+        <input type="text" class="input-box" placeholder="Storage tips, notes..." id="vialNotes" value="Reconstituted: 2-8°C, avoid freeze-thaw, ~2-3 weeks.">
+
+        <button class="btn-pink" onclick="saveVialSetup()">✓ Save & Open Visual Vial View</button>
+      </div>
+    </div>
+
+    <!-- LOG TAB -->
+    <div id="tab-log" class="tab-content">
+      <div class="header-center">
+        <span class="header-icon">📋</span>
+        <h2 class="header-title">Injection Log</h2>
+        <p class="header-sub">History of completed doses</p>
+      </div>
+      <button class="btn-pink" style="margin-bottom: 15px;" onclick="openLogModal()">+ Manual Log Entry</button>
+      <div id="logList"></div>
+    </div>
+
+  </div>
+
+  <!-- DARK VIAL VIEW OVERLAY -->
+  <div id="vialViewOverlay">
     <div class="top-nav">
-      <button class="icon-circle" onclick="history.back()">❮</button>
-      <div class="page-title">Glutathione</div>
+      <button class="icon-circle" onclick="closeVialOverlay()">❮</button>
+      <div style="font-weight:700;" id="darkVialTitle">Glutathione</div>
       <button class="icon-circle" onclick="alert('Vial Options')">•••</button>
     </div>
 
-    <!-- VIAL DISPLAY -->
     <div class="vial-stage">
-      <div class="stat-col">
-        <div class="stat-label">VOLUME</div>
-        <div class="stat-value">6.0 <span class="stat-unit">mL</span></div>
+      <div style="text-align:center;">
+        <div class="field-label">VOLUME</div>
+        <div style="font-size:1.3rem; font-weight:800;" id="darkVol">1.5 <span style="font-size:0.8rem">mL</span></div>
       </div>
 
       <div class="vial-wrapper">
         <div class="vial-cap"></div>
         <div class="vial-neck"></div>
         <div class="vial-body">
-          <div class="vial-label">GSH</div>
+          <div class="vial-label" id="darkTag">GSH</div>
           <div class="vial-liquid" id="liquidFill"></div>
         </div>
       </div>
 
-      <div class="stat-col">
-        <div class="stat-label">STRENGTH</div>
-        <div class="stat-value">100 <span class="stat-unit">mg/mL</span></div>
+      <div style="text-align:center;">
+        <div class="field-label">STRENGTH</div>
+        <div style="font-size:1.3rem; font-weight:800;" id="darkStrength">10.0 <span style="font-size:0.8rem">mg/mL</span></div>
       </div>
     </div>
 
-    <!-- DETAILS & STABILITY -->
-    <div class="details-section">
-      <h1 class="peptide-title">Glutathione</h1>
-      <p class="note-text">
-        Reconstituted 6 days ago · Lyophilized: -20°C dry/dark.<br>
+    <div style="text-align:center; margin-bottom:20px;">
+      <h1 style="font-size:1.8rem; font-weight:900;" id="darkName">Glutathione</h1>
+      <p style="font-size:0.8rem; color:#9e9e9e; margin-top:6px;" id="darkNotesText">
         Reconstituted: 2-8°C, avoid freeze-thaw, ~2-3 weeks.
       </p>
     </div>
 
-    <!-- METRICS CARD -->
     <div class="metrics-card">
       <div class="metric-box">
-        <div class="metric-label">PER DOSE</div>
-        <div class="metric-val" id="doseVal">100<span class="metric-sub">u</span></div>
+        <div class="field-label">PER DOSE</div>
+        <div class="metric-val" id="darkDoseVal">25<span class="metric-sub">u</span></div>
       </div>
       <div class="metric-box">
-        <div class="metric-label">MG LEFT</div>
-        <div class="metric-val" id="mgLeft">300<span class="metric-sub">mg</span></div>
+        <div class="field-label">MG LEFT</div>
+        <div class="metric-val" id="darkMgLeft">15<span class="metric-sub">mg</span></div>
       </div>
       <div class="metric-box">
-        <div class="metric-label">UNITS LEFT</div>
-        <div class="metric-val" id="unitsLeft">300<span class="metric-sub">u</span></div>
+        <div class="field-label">UNITS LEFT</div>
+        <div class="metric-val" id="darkUnitsLeft">150<span class="metric-sub">u</span></div>
       </div>
     </div>
 
-    <!-- LOG DOSE BUTTON -->
-    <button class="btn-amber" onclick="openLogModal()">Log dose</button>
+    <button class="btn-amber" onclick="logDoseFromVial()">Log Dose</button>
   </div>
 
   <!-- LOG DOSE MODAL -->
   <div class="modal-overlay" id="logModal">
     <div class="drawer">
-      <div class="drawer-header">
-        <button class="icon-circle" onclick="closeLogModal()">✕</button>
-        <h2 style="font-size: 1.2rem;">Log Injection Dose</h2>
-        <div></div>
-      </div>
+      <h3 style="margin-bottom:12px; font-weight:800;" id="modalTitle">Log Injection</h3>
       
-      <label class="stat-label" style="display:block; margin-bottom:8px;">UNITS INJECTED</label>
-      <input type="number" class="input-dark" id="logUnits" value="100">
+      <label class="field-label">Peptide Name</label>
+      <input type="text" class="input-box" id="logPeptide" value="Glutathione">
 
-      <label class="stat-label" style="display:block; margin-bottom:8px;">INJECTION SITE</label>
-      <input type="text" class="input-dark" id="logSite" placeholder="e.g. Subcutaneous Abdomen">
+      <label class="field-label">Dose Amount (IU / units)</label>
+      <input type="number" class="input-box" id="logUnits" value="25">
 
-      <button class="btn-amber" onclick="confirmDose()">Confirm & Deduct Dose</button>
+      <label class="field-label">Injection Site</label>
+      <input type="text" class="input-box" id="logSite" placeholder="e.g. Abdomen (Left)">
+
+      <label class="field-label">Date & Time</label>
+      <input type="datetime-local" class="input-box" id="logDateTime">
+
+      <button class="btn-pink" onclick="saveInjectionLog()">Save Injection Log</button>
+      <button style="background:none; border:none; width:100%; color:var(--text-muted); margin-top:8px; cursor:pointer;" onclick="closeLogModal()">Cancel</button>
     </div>
   </div>
 
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('schedule', this)">
+      <span class="nav-icon">📅</span>
+      <span>Setup</span>
+    </button>
+    <button class="nav-item" onclick="openVialOverlay()">
+      <span class="nav-icon">🧪</span>
+      <span>Vial View</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('log', this)">
+      <span class="nav-icon">📋</span>
+      <span>Log</span>
+    </button>
+  </nav>
+
   <script>
-    let currentUnits = 300;
-    let currentMg = 300;
+    let currentUnits = 150;
+    let totalUnits = 150;
+
+    function updateCalculations() {
+      const mg = parseFloat(document.getElementById('pepMg').value) || 0;
+      const ml = parseFloat(document.getElementById('bacMl').value) || 1;
+      const doseMg = parseFloat(document.getElementById('defDoseMg').value) || 0;
+
+      const conc = mg / ml;
+      const doseMl = doseMg / conc;
+      const doseIU = doseMl * 100;
+      const totalInjections = Math.floor(mg / doseMg);
+
+      document.getElementById('calcConc').innerText = conc.toFixed(3);
+      document.getElementById('calcDoseMg').innerText = doseMg;
+      document.getElementById('calcMl').innerText = doseMl.toFixed(3);
+      document.getElementById('calcIU').innerText = doseIU.toFixed(1);
+      document.getElementById('calcInjections').innerText = `Approx ${totalInjections || 0} injections per vial`;
+      
+      totalUnits = ml * 100;
+      currentUnits = totalUnits;
+    }
+
+    function switchTab(tabName, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      if(btn) btn.classList.add('active');
+    }
+
+    function selectPill(el) {
+      document.querySelectorAll('.pill-group .pill').forEach(p => p.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function saveVialSetup() {
+      const reconDate = document.getElementById('reconDate').value;
+      const notes = document.getElementById('vialNotes').value;
+      const mg = document.getElementById('pepMg').value;
+      const ml = document.getElementById('bacMl').value;
+      const doseIU = document.getElementById('calcIU').innerText;
+
+      document.getElementById('darkVol').innerHTML = `${ml} <span style="font-size:0.8rem">mL</span>`;
+      document.getElementById('darkStrength').innerHTML = `${(mg/ml).toFixed(1)} <span style="font-size:0.8rem">mg/mL</span>`;
+      document.getElementById('darkDoseVal').innerHTML = `${doseIU}<span class="metric-sub">u</span>`;
+      document.getElementById('darkMgLeft').innerHTML = `${mg}<span class="metric-sub">mg</span>`;
+      document.getElementById('darkUnitsLeft').innerHTML = `${ml * 100}<span class="metric-sub">u</span>`;
+      document.getElementById('darkNotesText').innerText = `Reconstituted on ${reconDate}. ${notes}`;
+
+      openVialOverlay();
+    }
+
+    function openVialOverlay() {
+      document.getElementById('vialViewOverlay').classList.add('active');
+    }
+
+    function closeVialOverlay() {
+      document.getElementById('vialViewOverlay').classList.remove('active');
+    }
 
     function openLogModal() {
       document.getElementById('logModal').classList.add('active');
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('logDateTime').value = now.toISOString().slice(0, 16);
     }
 
     function closeLogModal() {
       document.getElementById('logModal').classList.remove('active');
     }
 
-    function confirmDose() {
-      const unitsUsed = parseInt(document.getElementById('logUnits').value) || 0;
-      if (unitsUsed > 0 && currentUnits >= unitsUsed) {
-        currentUnits -= unitsUsed;
-        currentMg = Math.round((currentUnits / 300) * 300);
-
-        document.getElementById('unitsLeft').innerHTML = `${currentUnits}<span class="metric-sub">u</span>`;
-        document.getElementById('mgLeft').innerHTML = `${currentMg}<span class="metric-sub">mg</span>`;
-
-        // Adjust liquid level inside graphic
-        const fillPercent = Math.max(5, (currentUnits / 300) * 35);
-        document.getElementById('liquidFill').style.height = `${fillPercent}%`;
-
-        closeLogModal();
-        alert(`Logged ${unitsUsed}u injection! Remaining: ${currentUnits}u`);
-      }
+    function logDoseFromVial() {
+      openLogModal();
     }
+
+    function saveInjectionLog() {
+      const peptide = document.getElementById('logPeptide').value;
+      const units = parseInt(document.getElementById('logUnits').value) || 0;
+      const site = document.getElementById('logSite').value || 'Not specified';
+      const dt = document.getElementById('logDateTime').value;
+
+      const logs = JSON.parse(localStorage.getItem('injection_logs') || '[]');
+      logs.unshift({ peptide, units, site, dt });
+      localStorage.setItem('injection_logs', JSON.stringify(logs));
+
+      // Update liquid level
+      if (currentUnits >= units) {
+        currentUnits -= units;
+        const pct = Math.max(5, (currentUnits / totalUnits) * 45);
+        document.getElementById('liquidFill').style.height = `${pct}%`;
+        document.getElementById('darkUnitsLeft').innerHTML = `${currentUnits}<span class="metric-sub">u</span>`;
+      }
+
+      closeLogModal();
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logList');
+      const logs = JSON.parse(localStorage.getItem('injection_logs') || '[]');
+      if (logs.length === 0) {
+        container.innerHTML = '<div class="card"><p style="font-size:0.85rem; color:var(--text-muted); text-align:center;">No injections logged yet.</p></div>';
+        return;
+      }
+      container.innerHTML = logs.map(l => `
+        <div class="card">
+          <h3 style="font-size:1rem; font-weight:800;">${l.peptide}</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">Dose: ${l.units} IU · Site: ${l.site}</p>
+          <p style="font-size:0.75rem; color:var(--accent-pink); margin-top:4px; font-weight:bold;">${new Date(l.dt).toLocaleString()}</p>
+        </div>
+      `).join('');
+    }
+
+    updateCalculations();
+    renderLogs();
   </script>
 </body>
 </html>
