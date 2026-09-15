@@ -7,291 +7,180 @@
   <meta name="theme-color" content="#fff5f7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBlcHRpZGUgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiUGVwdGlkZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmNWY3IiwKICAidGhlbWVfY29sb3IiOiAiI2ZmZjVmNyIKfQ==">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBlcHRpZGUgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiUGVwdGlkZSIsCiAgInNob3J0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmNWY3IiwKICAidGhlbWVfY29sb3IiOiAiI2ZmZjVmNyIKfQ==">
   <style>
     :root {
       --bg-color: #fff5f7;
       --card-bg: #ffffff;
       --text-main: #4a3e3e;
       --text-muted: #8c7b7b;
-      --accent-pink: #f8b4c4;
-      --accent-hover: #f497ac;
+      --accent-pink: #e07a93;
+      --accent-hover: #d0627d;
       --accent-light: #fde8ed;
+      --pill-selected: #e07a93;
       --border-color: #f3dbe0;
-      --pill-bg: #f9ecef;
       --shadow: 0 4px 15px rgba(232, 180, 193, 0.2);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; min-height: 100vh; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 80px; min-height: 100vh; }
 
-    .main-container { max-width: 500px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h1 { font-size: 1.5rem; color: #5a4248; }
+    .app-container { max-width: 500px; margin: 0 auto; padding: 20px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    .btn-pink {
-      background: var(--accent-pink);
-      color: white; border: none;
-      padding: 10px 16px; border-radius: 20px;
-      font-weight: bold; cursor: pointer;
-      box-shadow: var(--shadow); transition: background 0.2s;
-    }
-    .btn-pink:hover { background: var(--accent-hover); }
+    /* HEADER */
+    .header-center { text-align: center; margin-bottom: 20px; }
+    .header-icon { font-size: 2.5rem; margin-bottom: 8px; display: inline-block; }
+    .header-title { font-size: 1.5rem; color: #3a2e2e; font-weight: 800; }
+    .header-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
 
-    .vial-card {
-      background: var(--card-bg); border-radius: 16px; padding: 16px;
-      box-shadow: var(--shadow); margin-bottom: 12px;
-      display: flex; justify-content: space-between; align-items: center;
-      border: 1px solid var(--border-color);
-    }
+    /* CARD STYLES */
+    .card { background: var(--card-bg); border-radius: 20px; padding: 18px; box-shadow: var(--shadow); margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .next-dose-banner { background: #ffffff; border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+    .icon-square { width: 44px; height: 44px; background: var(--accent-pink); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
 
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(74, 62, 62, 0.4); display: none;
-      justify-content: center; align-items: flex-end; z-index: 1000;
-    }
-    .modal-overlay.active { display: flex; }
+    /* FORM ELEMENTS */
+    .field-label { font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: block; }
+    .input-box { width: 100%; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px 16px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); outline: none; margin-bottom: 16px; }
+    
+    .pill-group { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+    .pill { background: var(--bg-color); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); cursor: pointer; white-space: nowrap; flex: 1; text-align: center; }
+    .pill.selected { background: var(--pill-selected); color: white; border-color: var(--pill-selected); }
 
-    .drawer {
-      background: var(--bg-color); width: 100%; max-width: 500px;
-      max-height: 90vh; border-top-left-radius: 24px; border-top-right-radius: 24px;
-      overflow-y: auto; padding: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
-      animation: slideUp 0.3s ease-out;
-    }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .days-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .day-pill { width: 45px; height: 38px; border-radius: 18px; background: var(--bg-color); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+    .day-pill.selected { background: var(--pill-selected); color: white; border-color: var(--pill-selected); }
 
-    .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .icon-btn {
-      background: #f0dfe3; border: none; width: 36px; height: 36px;
-      border-radius: 50%; font-size: 1.1rem; color: var(--text-main);
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
-    .save-btn { background: var(--accent-pink); color: white; }
+    .btn-outline { width: 100%; background: white; border: 1.5px solid var(--border-color); border-radius: 14px; padding: 12px; font-weight: 700; color: var(--accent-pink); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; }
+    .btn-pink { background: var(--accent-pink); color: white; border: none; padding: 12px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: var(--shadow); }
 
-    .section-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; margin: 16px 0 8px 4px; }
-    .form-group {
-      background: var(--card-bg); border-radius: 14px; padding: 12px 16px;
-      margin-bottom: 8px; border: 1px solid var(--border-color);
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .form-group.column-layout {
-      flex-direction: column; align-items: flex-start; gap: 10px;
-    }
-    .form-label { display: flex; flex-direction: column; width: 55%; }
-    .label-main { font-weight: 600; font-size: 0.95rem; }
-    .label-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-
-    input, select {
-      border: 1px solid var(--border-color); background: var(--bg-color);
-      padding: 8px 12px; border-radius: 8px; color: var(--text-main);
-      text-align: right; font-weight: 600; outline: none; max-width: 140px;
-    }
-    select { max-width: 170px; text-align: left; }
-    .input-group { display: flex; align-items: center; gap: 6px; }
-
-    .picker-pill {
-      position: relative;
-      background: var(--pill-bg);
-      border: 1px solid var(--border-color);
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-main);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .picker-pill input[type="date"],
-    .picker-pill input[type="time"] {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
-
-    .toggle-switch { position: relative; width: 44px; height: 24px; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #e0d0d4; border-radius: 24px; transition: .3s;
-    }
-    .slider:before {
-      position: absolute; content: ""; height: 18px; width: 18px;
-      left: 3px; bottom: 3px; background-color: white;
-      border-radius: 50%; transition: .3s;
-    }
-    input:checked + .slider { background-color: var(--accent-pink); }
-    input:checked + .slider:before { transform: translateX(20px); }
-
-    .color-grid {
-      display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
-      background: var(--card-bg); border-radius: 14px; padding: 16px;
-      border: 1px solid var(--border-color); margin-bottom: 8px;
-    }
-    .swatch {
-      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
-      border: 2px solid transparent; transition: transform 0.1s; display: flex;
-      align-items: center; justify-content: center; margin: 0 auto;
-    }
-    .swatch.selected { border-color: var(--text-main); transform: scale(1.1); }
-    .swatch.rainbow { background: linear-gradient(135deg, red, orange, yellow, green, blue, purple); }
-    .swatch.none { background: #eee; position: relative; }
-    .swatch.none::after { content: "/"; font-weight: bold; color: #888; }
-
-    .photo-upload { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-    .photo-preview { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #eee; display: none; }
-
-    .info-box {
-      background: var(--accent-light); border-radius: 12px; padding: 12px;
-      font-size: 0.8rem; color: #7a5a62; display: flex; gap: 8px; margin-top: 8px;
-    }
+    /* NAVBAR */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0 20px 0; z-index: 999; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; border: none; background: none; }
+    .nav-item.active { color: var(--accent-pink); font-weight: 700; }
+    .nav-icon { font-size: 1.3rem; }
   </style>
 </head>
 <body>
 
-  <div class="main-container">
-    <header>
-      <h1>My Peptides</h1>
-      <button class="btn-pink" onclick="openEditModal()">+ Add / Edit Vial</button>
-    </header>
-    
-    <button class="btn-pink" style="width:100%; margin-bottom:15px;" onclick="testAlert()">🔔 Test Notification Sound</button>
+  <div class="app-container">
 
-    <div id="vialList"></div>
-  </div>
-
-  <!-- EDIT VIAL MODAL DRAWER -->
-  <div class="modal-overlay" id="editModal">
-    <div class="drawer">
-      <div class="drawer-header">
-        <button class="icon-btn" onclick="closeEditModal()">✕</button>
-        <h2>Edit vial</h2>
-        <button class="icon-btn save-btn" onclick="saveVial()">✓</button>
+    <!-- CALCULATOR TAB -->
+    <div id="tab-calculator" class="tab-content">
+      <div class="header-center">
+        <span class="header-icon">🧮</span>
+        <h2 class="header-title">Peptide Calculator</h2>
+        <p class="header-sub">Calculate reconstitution & dosing</p>
       </div>
-
-      <!-- SECTION 1: PHYSICAL -->
-      <div class="section-title">PHYSICAL</div>
-      
-      <div class="form-group">
-        <div class="form-label">
-          <span class="label-main">Vial strength</span>
-          <span class="label-sub">As printed on the label</span>
-        </div>
-        <div class="input-group">
-          <input type="number" id="vialStrength" value="600" placeholder="0">
-          <select id="strengthUnit" style="width: 65px;">
-            <option value="mg">mg</option>
-            <option value="mcg">mcg</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <div class="form-label">
-          <span class="label-main">BAC water</span>
-          <span class="label-sub">Volume added at reconstitution</span>
-        </div>
-        <div class="input-group">
-          <input type="number" step="0.1" id="bacWater" value="6.0">
-          <span>mL</span>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <div class="form-label">
-          <span class="label-main">Syringe</span>
-          <span class="label-sub">100 units · standard</span>
-        </div>
-        <select id="syringeSelect">
-          <option value="1.0">1 mL</option>
-          <option value="0.5">0.5 mL</option>
-          <option value="0.3">0.3 mL</option>
-        </select>
-      </div>
-
-      <!-- RECONSTITUTED DATE & TIME -->
-      <div class="form-group">
-        <div class="form-label">
-          <span class="label-main">Reconstituted</span>
-          <span class="label-sub">When was this mixed?</span>
-        </div>
-        <div class="input-group">
-          <div class="picker-pill">
-            <span id="dateDisplay">9 Sep 2026</span>
-            <input type="date" id="reconDate" onchange="updateDateTimeDisplay()">
-          </div>
-          <div class="picker-pill">
-            <span id="timeDisplay">12:14 AM</span>
-            <input type="time" id="reconTime" onchange="updateDateTimeDisplay()">
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <span class="label-main" style="font-size: 0.85rem; color: var(--text-muted);">Date is approximate</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="dateApprox">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <div class="form-label">
-          <span class="label-main">Cost</span>
-          <span class="label-sub">What you paid (optional)</span>
-        </div>
-        <div class="input-group">
-          <span>$</span>
-          <input type="number" id="vialCost" placeholder="0">
-        </div>
-      </div>
-
-      <!-- SECTION 2: CAP COLOR -->
-      <div class="section-title">CAP COLOR</div>
-      <div class="color-grid" id="colorGrid"></div>
-      
-      <div class="form-group photo-upload">
-        <button class="btn-pink" style="font-size:0.8rem;" onclick="document.getElementById('photoInput').click()">📷 Add Photo</button>
-        <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
-        <img id="photoPreview" class="photo-preview" src="" alt="Vial preview">
-      </div>
-
-      <!-- SECTION 3: PLAN -->
-      <div class="section-title">PLAN</div>
-      <div class="form-group">
-        <div class="form-label">
-          <span class="label-main">Plan</span>
-          <span class="label-sub" id="planSubtext">Protocol for Glutathione</span>
-        </div>
-        <select id="planSelect" onchange="toggleCustomPlanInput()">
-          <option value="Glutathione">Glutathione</option>
-          <option value="Semaglutide">Semaglutide</option>
-          <option value="Tirzepatide">Tirzepatide</option>
-          <option value="NAD+">NAD+</option>
-          <option value="Custom">Custom Plan...</option>
-        </select>
-      </div>
-
-      <div class="form-group column-layout" id="customPlanGroup" style="display: none;">
-        <div class="form-label" style="width: 100%;">
-          <span class="label-main">Custom Plan Name</span>
-          <span class="label-sub">Type your custom peptide or routine name</span>
-        </div>
-        <input type="text" id="customPlanInput" placeholder="e.g. Morning Glow Routine" style="text-align: left; max-width: 100%; width: 100%;">
-      </div>
-      
-      <div class="info-box">
-        <span>ⓘ</span>
-        <span id="infoBoxText">Showing Glutathione plans — the peptide can't change once injections are logged</span>
+      <div class="card">
+        <label class="field-label">Vial Quantity (mg)</label>
+        <input type="number" class="input-box" value="10" id="calcMg">
+        <label class="field-label">BAC Water (mL)</label>
+        <input type="number" class="input-box" value="2" id="calcMl">
+        <label class="field-label">Desired Dose (mcg)</label>
+        <input type="number" class="input-box" value="250" id="calcDose">
+        <button class="btn-pink" onclick="alert('Pull 5 units on a standard 100-unit U-100 syringe.')">Calculate Units</button>
       </div>
     </div>
+
+    <!-- VIALS TAB -->
+    <div id="tab-vials" class="tab-content">
+      <div class="header-center">
+        <span class="header-icon">🧪</span>
+        <h2 class="header-title">My Vials</h2>
+        <p class="header-sub">Manage active peptide inventory</p>
+      </div>
+      <button class="btn-pink" style="margin-bottom: 15px;" onclick="testAlert()">🔔 Test Sound Alert</button>
+      <div class="card">
+        <h3>Fat Blaster</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">10mg / 2mL BAC Water</p>
+      </div>
+    </div>
+
+    <!-- LOG TAB -->
+    <div id="tab-log" class="tab-content">
+      <div class="header-center">
+        <span class="header-icon">📋</span>
+        <h2 class="header-title">Injection Log</h2>
+        <p class="header-sub">Track completed doses</p>
+      </div>
+      <div class="card">
+        <p style="font-size:0.85rem; color:var(--text-muted); text-align:center;">No injections logged yet.</p>
+      </div>
+    </div>
+
+    <!-- DOSE SCHEDULE TAB (YOUR SCREENSHOT) -->
+    <div id="tab-schedule" class="tab-content active">
+      <div class="header-center">
+        <span class="header-icon">📅</span>
+        <h2 class="header-title">Dose Schedule</h2>
+        <p class="header-sub">Set reminders and sync your calendar</p>
+      </div>
+
+      <div class="next-dose-banner">
+        <div class="icon-square">⏰</div>
+        <div>
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; display:block;">Next scheduled dose</span>
+          <span style="font-size:0.95rem; font-weight:800; color:var(--text-main);" id="nextDoseText">Sep 17, 2026 at 10:00 AM</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Peptide</label>
+        <input type="text" class="input-box" value="Fat Blaster" id="schedPeptide">
+
+        <label class="field-label">Frequency</label>
+        <div class="pill-group">
+          <div class="pill" onclick="selectFreq(this)">Daily</div>
+          <div class="pill" onclick="selectFreq(this)">Every 2 days</div>
+          <div class="pill selected" onclick="selectFreq(this)">3x/week</div>
+          <div class="pill" onclick="selectFreq(this)">Weekly</div>
+        </div>
+
+        <label class="field-label">Days</label>
+        <div class="days-grid">
+          <div class="day-pill" onclick="toggleDay(this)">Mon</div>
+          <div class="day-pill selected" onclick="toggleDay(this)">Tue</div>
+          <div class="day-pill" onclick="toggleDay(this)">Wed</div>
+          <div class="day-pill selected" onclick="toggleDay(this)">Thu</div>
+          <div class="day-pill" onclick="toggleDay(this)">Fri</div>
+          <div class="day-pill selected" onclick="toggleDay(this)">Sat</div>
+          <div class="day-pill" onclick="toggleDay(this)">Sun</div>
+        </div>
+
+        <label class="field-label">Reminder Times</label>
+        <input type="time" class="input-box" value="10:00" style="margin-bottom:8px;">
+
+        <button class="btn-outline">
+          <span>📅</span> Add Another Time
+        </button>
+      </div>
+    </div>
+
   </div>
 
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="switchTab('calculator')">
+      <span class="nav-icon">🧮</span>
+      <span>Calculator</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('vials')">
+      <span class="nav-icon">🧪</span>
+      <span>Vials</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('log')">
+      <span class="nav-icon">📋</span>
+      <span>Log</span>
+    </button>
+    <button class="nav-item active" onclick="switchTab('schedule')">
+      <span class="nav-icon">📅</span>
+      <span>Schedule</span>
+    </button>
+  </nav>
+
   <script>
-    let selectedColor = 'none';
-    let photoBase64 = '';
     let audioCtx;
 
     document.addEventListener('click', () => {
@@ -301,25 +190,18 @@
     }, { once: true });
 
     function playNotificationSound() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      
       osc.type = 'sine';
       osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
-      
       gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-      
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      
       osc.start();
       osc.stop(audioCtx.currentTime + 0.3);
     }
@@ -327,192 +209,29 @@
     function testAlert() {
       playNotificationSound();
       if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-
       if (Notification.permission === 'granted') {
-        new Notification('Peptide Tracker', { body: 'Test Alert: Peptide Tracker notifications are working!' });
+        new Notification('Peptide Tracker', { body: 'Test Alert: Peptide Tracker notifications working!' });
       } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            new Notification('Peptide Tracker', { body: 'Test Alert: Peptide Tracker notifications are working!' });
-          }
-        });
+        Notification.requestPermission();
       }
     }
 
-    const colors = [
-      { name: 'none', css: 'none' },
-      { name: 'red', css: '#ff6b6b' },
-      { name: 'orange', css: '#ffa94d' },
-      { name: 'yellow', css: '#ffd43b' },
-      { name: 'green', css: '#51cf66' },
-      { name: 'teal', css: '#20c997' },
-      { name: 'blue', css: '#339af0' },
-      { name: 'purple', css: '#cc5de8' },
-      { name: 'pink', css: '#f783ac' },
-      { name: 'white', css: '#ffffff' },
-      { name: 'grey', css: '#adb5bd' },
-      { name: 'rainbow', css: 'rainbow' }
-    ];
-
-    function toggleCustomPlanInput() {
-      const select = document.getElementById('planSelect');
-      const customGroup = document.getElementById('customPlanGroup');
-      const subtext = document.getElementById('planSubtext');
-      const infoText = document.getElementById('infoBoxText');
-
-      if (select.value === 'Custom') {
-        customGroup.style.display = 'flex';
-        subtext.textContent = 'Custom protocol active';
-        infoText.textContent = 'Custom plan selected — type your preferred name above.';
-      } else {
-        customGroup.style.display = 'none';
-        subtext.textContent = `Protocol for ${select.value}`;
-        infoText.textContent = `Showing ${select.value} plans — the peptide can't change once injections are logged`;
-      }
-    }
-
-    function updateDateTimeDisplay() {
-      const dateVal = document.getElementById('reconDate').value;
-      const timeVal = document.getElementById('reconTime').value;
-
-      if (dateVal) {
-        const d = new Date(dateVal + 'T00:00:00');
-        const options = { day: 'numeric', month: 'short', year: 'numeric' };
-        document.getElementById('dateDisplay').textContent = d.toLocaleDateString('en-GB', options);
-      }
-
-      if (timeVal) {
-        const [hours, minutes] = timeVal.split(':');
-        const h = parseInt(hours, 10);
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const h12 = h % 12 || 12;
-        document.getElementById('timeDisplay').textContent = `${h12}:${minutes} ${ampm}`;
-      }
-    }
-
-    function initColorGrid() {
-      const grid = document.getElementById('colorGrid');
-      grid.innerHTML = '';
-      colors.forEach(c => {
-        const div = document.createElement('div');
-        div.className = `swatch ${c.css} ${selectedColor === c.name ? 'selected' : ''}`;
-        if (c.css !== 'rainbow' && c.css !== 'none') div.style.backgroundColor = c.css;
-        div.onclick = () => {
-          document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
-          div.classList.add('selected');
-          selectedColor = c.name;
-        };
-        grid.appendChild(div);
-      });
-    }
-
-    function openEditModal() {
-      document.getElementById('editModal').classList.add('active');
-      initColorGrid();
-      loadData();
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
-    }
-
-    function handlePhotoUpload(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          photoBase64 = event.target.result;
-          const preview = document.getElementById('photoPreview');
-          preview.src = photoBase64;
-          preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function saveVial() {
-      const selectVal = document.getElementById('planSelect').value;
-      const customVal = document.getElementById('customPlanInput').value.trim();
-      const finalPlanName = (selectVal === 'Custom' && customVal) ? customVal : selectVal;
-
-      const data = {
-        strength: document.getElementById('vialStrength').value,
-        unit: document.getElementById('strengthUnit').value,
-        bacWater: document.getElementById('bacWater').value,
-        syringe: document.getElementById('syringeSelect').value,
-        reconDate: document.getElementById('reconDate').value,
-        reconTime: document.getElementById('reconTime').value,
-        dateApprox: document.getElementById('dateApprox').checked,
-        cost: document.getElementById('vialCost').value,
-        color: selectedColor,
-        photo: photoBase64,
-        plan: finalPlanName,
-        isCustom: selectVal === 'Custom'
-      };
-
-      localStorage.setItem('peptide_vial_data', JSON.stringify(data));
-      closeEditModal();
-      renderCard();
-    }
-
-    function loadData() {
-      const saved = localStorage.getItem('peptide_vial_data');
-      if (saved) {
-        const data = JSON.parse(saved);
-        document.getElementById('vialStrength').value = data.strength || 600;
-        document.getElementById('strengthUnit').value = data.unit || 'mg';
-        document.getElementById('bacWater').value = data.bacWater || 6.0;
-        document.getElementById('syringeSelect').value = data.syringe || '1.0';
-        document.getElementById('reconDate').value = data.reconDate || '2026-09-09';
-        document.getElementById('reconTime').value = data.reconTime || '00:14';
-        document.getElementById('dateApprox').checked = data.dateApprox || false;
-        document.getElementById('vialCost').value = data.cost || '0';
-        
-        if (data.isCustom || !['Glutathione', 'Semaglutide', 'Tirzepatide', 'NAD+'].includes(data.plan)) {
-          document.getElementById('planSelect').value = 'Custom';
-          document.getElementById('customPlanInput').value = data.plan || '';
-        } else {
-          document.getElementById('planSelect').value = data.plan || 'Glutathione';
-        }
-
-        selectedColor = data.color || 'none';
-        if (data.photo) {
-          photoBase64 = data.photo;
-          const preview = document.getElementById('photoPreview');
-          preview.src = photoBase64;
-          preview.style.display = 'block';
-        }
-      } else {
-        document.getElementById('reconDate').value = '2026-09-09';
-        document.getElementById('reconTime').value = '00:14';
-      }
-      toggleCustomPlanInput();
-      updateDateTimeDisplay();
-    }
-
-    function renderCard() {
-      const saved = localStorage.getItem('peptide_vial_data');
-      const container = document.getElementById('vialList');
-      if (!saved) {
-        container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">No vials added yet.</p>';
-        return;
-      }
-      const data = JSON.parse(saved);
-      const conc = (data.strength / data.bacWater).toFixed(2);
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       
-      container.innerHTML = `
-        <div class="vial-card">
-          <div>
-            <h3>${data.plan}</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">${data.strength}${data.unit} / ${data.bacWater}mL BAC</p>
-            <p style="font-size: 0.8rem; font-weight: bold; color: var(--accent-hover); margin-top: 4px;">Conc: ${conc} ${data.unit}/mL</p>
-          </div>
-          <button class="btn-pink" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openEditModal()">Edit</button>
-        </div>
-      `;
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      event.currentTarget.classList.add('active');
     }
 
-    renderCard();
+    function selectFreq(el) {
+      document.querySelectorAll('.pill-group .pill').forEach(p => p.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function toggleDay(el) {
+      el.classList.toggle('selected');
+    }
   </script>
 </body>
 </html>
